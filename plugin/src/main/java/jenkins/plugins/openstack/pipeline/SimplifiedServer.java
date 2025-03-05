@@ -22,7 +22,7 @@ public class SimplifiedServer implements Serializable {
     private static final long serialVersionUID = 860084023141474202L;
 
     // Null after destroyed
-    private @CheckForNull Server srv;
+    private @CheckForNull volatile Server srv;
     private @Nonnull String cloud;
     private @Nonnull String template;
     private @Nonnull String scope;
