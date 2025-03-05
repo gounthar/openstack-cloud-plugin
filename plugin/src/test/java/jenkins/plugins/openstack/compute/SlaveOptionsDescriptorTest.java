@@ -1,28 +1,5 @@
 package jenkins.plugins.openstack.compute;
 
-import org.htmlunit.HttpMethod;
-import org.htmlunit.WebRequest;
-import hudson.util.ComboBoxModel;
-import hudson.util.FormValidation;
-import jenkins.plugins.openstack.PluginTestRule;
-import jenkins.plugins.openstack.compute.auth.OpenstackCredential;
-import jenkins.plugins.openstack.compute.auth.OpenstackCredentials;
-import jenkins.plugins.openstack.compute.internal.Openstack;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.openstack4j.api.exceptions.AuthenticationException;
-import org.openstack4j.model.compute.ext.AvailabilityZone;
-
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import static hudson.util.FormValidation.Kind.ERROR;
 import static hudson.util.FormValidation.Kind.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,6 +17,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import hudson.util.ComboBoxModel;
+import hudson.util.FormValidation;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.Callable;
+import jenkins.plugins.openstack.PluginTestRule;
+import jenkins.plugins.openstack.compute.auth.OpenstackCredential;
+import jenkins.plugins.openstack.compute.auth.OpenstackCredentials;
+import jenkins.plugins.openstack.compute.internal.Openstack;
+import org.htmlunit.HttpMethod;
+import org.htmlunit.WebRequest;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.openstack4j.api.exceptions.AuthenticationException;
+import org.openstack4j.model.compute.ext.AvailabilityZone;
 
 /**
  * @author ogondza.
@@ -59,9 +58,12 @@ public class SlaveOptionsDescriptorTest {
     public void doCheckInstanceCap() {
         assertThat(d.doCheckInstanceCap(null, null), j.validateAs(OK, "Inherited value: 10"));
         assertThat(d.doCheckInstanceCap(null, "3"), j.validateAs(OK, "Inherited value: 3"));
-        assertThat(d.doCheckInstanceCap(null, "err"), j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
+        assertThat(
+                d.doCheckInstanceCap(null, "err"),
+                j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
         assertThat(d.doCheckInstanceCap("1", "1"), j.validateAs(OK, null)); // TODO do we want to report def == value ?
-        // assertEquals(OK, d.doCheckInstanceCap("0", "1").kind); TODO this can be a handy way to disable the cloud/template temporarily
+        // assertEquals(OK, d.doCheckInstanceCap("0", "1").kind); TODO this can be a handy way to disable the
+        // cloud/template temporarily
 
         assertThat(d.doCheckInstanceCap("err", null), j.validateAs(ERROR, "Not a number"));
         assertThat(d.doCheckInstanceCap("err", "1"), j.validateAs(ERROR, "Not a number"));
@@ -73,8 +75,10 @@ public class SlaveOptionsDescriptorTest {
     public void doCheckStartTimeout() {
         assertThat(d.doCheckStartTimeout(null, null), j.validateAs(OK, "Inherited value: 600000"));
         assertThat(d.doCheckStartTimeout(null, "10"), j.validateAs(OK, "Inherited value: 10"));
-        assertThat(d.doCheckStartTimeout(null, "err"), j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
-        assertThat(d.doCheckStartTimeout("1", "1"), j.validateAs(OK, null)); //"Inherited value: 1"
+        assertThat(
+                d.doCheckStartTimeout(null, "err"),
+                j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
+        assertThat(d.doCheckStartTimeout("1", "1"), j.validateAs(OK, null)); // "Inherited value: 1"
 
         assertThat(d.doCheckStartTimeout("0", "1"), j.validateAs(ERROR, "Not a positive number"));
         assertThat(d.doCheckStartTimeout("err", null), j.validateAs(ERROR, "Not a number"));
@@ -87,8 +91,10 @@ public class SlaveOptionsDescriptorTest {
     public void doCheckNumExecutors() {
         assertThat(d.doCheckNumExecutors(null, null), j.validateAs(OK, "Inherited value: 1"));
         assertThat(d.doCheckNumExecutors(null, "10"), j.validateAs(OK, "Inherited value: 10"));
-        assertThat(d.doCheckNumExecutors(null, "err"), j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
-        assertThat(d.doCheckNumExecutors("1", "1"), j.validateAs(OK, null)); //"Inherited value: 1"
+        assertThat(
+                d.doCheckNumExecutors(null, "err"),
+                j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
+        assertThat(d.doCheckNumExecutors("1", "1"), j.validateAs(OK, null)); // "Inherited value: 1"
 
         assertThat(d.doCheckNumExecutors("0", "1"), j.validateAs(ERROR, "Not a positive number"));
         assertThat(d.doCheckNumExecutors("err", null), j.validateAs(ERROR, "Not a number"));
@@ -101,8 +107,10 @@ public class SlaveOptionsDescriptorTest {
     public void doCheckRetentionTime() {
         assertThat(d.doCheckRetentionTime(null, null), j.validateAs(OK, "Inherited value: 30"));
         assertThat(d.doCheckRetentionTime(null, "10"), j.validateAs(OK, "Inherited value: 10"));
-        assertThat(d.doCheckRetentionTime(null, "err"), j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
-        assertThat(d.doCheckRetentionTime("1", "1"), j.validateAs(OK, null)); //"Inherited value: 1"
+        assertThat(
+                d.doCheckRetentionTime(null, "err"),
+                j.validateAs(OK, "Inherited value: err")); // It is ok, error should be reported for the default
+        assertThat(d.doCheckRetentionTime("1", "1"), j.validateAs(OK, null)); // "Inherited value: 1"
         assertThat(d.doCheckRetentionTime("0", "1"), j.validateAs(OK, null));
         assertThat(d.doCheckRetentionTime("-1", null), j.validateAs(OK, "Keep forever"));
         assertThat(d.doCheckRetentionTime("-1", "1"), j.validateAs(OK, "Keep forever"));
@@ -147,7 +155,8 @@ public class SlaveOptionsDescriptorTest {
         final Openstack os = j.fakeOpenstackFactory();
         final String openstackAuth = j.dummyCredentials();
 
-        final FormValidation actual = d.doCheckAvailabilityZone("chosenAZ", "", "OSurl", false,"OSurl", openstackAuth,openstackAuth,"OSzone", "OSzone");
+        final FormValidation actual = d.doCheckAvailabilityZone(
+                "chosenAZ", "", "OSurl", false, "OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
 
         assertThat(actual, j.validateAs(FormValidation.ok()));
         verifyNoMoreInteractions(os);
@@ -160,7 +169,8 @@ public class SlaveOptionsDescriptorTest {
         final Openstack os = j.fakeOpenstackFactory();
         final String openstackAuth = j.dummyCredentials();
 
-        final FormValidation actual = d.doCheckAvailabilityZone(value, def,  "OSurl", false,"OSurl", openstackAuth,openstackAuth,"OSzone", "OSzone");
+        final FormValidation actual = d.doCheckAvailabilityZone(
+                value, def, "OSurl", false, "OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
 
         assertThat(actual, j.validateAs(OK, "Inherited value: " + def));
         verifyNoMoreInteractions(os);
@@ -175,7 +185,8 @@ public class SlaveOptionsDescriptorTest {
         doReturn(azs).when(os).getAvailabilityZones();
         final String openstackAuth = j.dummyCredentials();
 
-        final FormValidation actual = d.doCheckAvailabilityZone("", "", "OSurl", false,"OSurl", openstackAuth,openstackAuth, "OSzone", "OSzone");
+        final FormValidation actual = d.doCheckAvailabilityZone(
+                "", "", "OSurl", false, "OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
 
         assertThat(actual, j.validateAs(FormValidation.ok()));
     }
@@ -188,7 +199,8 @@ public class SlaveOptionsDescriptorTest {
         final String def = "";
         final String openstackAuth = j.dummyCredentials();
 
-        final FormValidation actual = d.doCheckAvailabilityZone(value, def, "OSurl", false,"OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
+        final FormValidation actual = d.doCheckAvailabilityZone(
+                value, def, "OSurl", false, "OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
 
         assertThat(actual, j.validateAs(FormValidation.ok()));
     }
@@ -205,7 +217,8 @@ public class SlaveOptionsDescriptorTest {
         final String value = "";
         final String def = "";
         final String openstackAuth = j.dummyCredentials();
-        final FormValidation actual = d.doCheckAvailabilityZone(value, def, "OSurl", false, "OSurl",openstackAuth, openstackAuth, "OSzone", "OSzone");
+        final FormValidation actual = d.doCheckAvailabilityZone(
+                value, def, "OSurl", false, "OSurl", openstackAuth, openstackAuth, "OSzone", "OSzone");
 
         assertThat(actual, j.validateAs(FormValidation.warning("Ambiguity warning: Multiple zones found.")));
     }
@@ -216,8 +229,7 @@ public class SlaveOptionsDescriptorTest {
                 "../endPointUrl", "../../endPointUrl",
                 "../ignoreSsl", "../../ignoreSsl",
                 "../credentialsId", "../../credentialsId",
-                "../zone", "../../zone"
-        );
+                "../zone", "../../zone");
 
         assertThat(getFillDependencies("keyPairName"), equalTo(expected));
         assertThat(getFillDependencies("floatingIpPool"), equalTo(expected));
@@ -234,9 +246,7 @@ public class SlaveOptionsDescriptorTest {
         final String CREDENTIALSID = j.dummyCredentials();
         final String REGION = "REGION";
         final String QUERY_STRING = String.format(
-                "?endPointUrl=%s&ignoreSsl=%s&credentialsId=%s&zone=%s",
-                END_POINT, IGNORE_SSL, CREDENTIALSID, REGION
-        );
+                "?endPointUrl=%s&ignoreSsl=%s&credentialsId=%s&zone=%s", END_POINT, IGNORE_SSL, CREDENTIALSID, REGION);
 
         String contextPath = j.getURL().getFile();
         String fillUrl = getFillUrl(attribute);
@@ -244,17 +254,20 @@ public class SlaveOptionsDescriptorTest {
         fillUrl = fillUrl.substring(contextPath.length());
 
         Openstack.FactoryEP factory = j.mockOpenstackFactory();
-        when(
-                factory.getOpenstack(anyString(), anyBoolean(), any(OpenstackCredential.class), anyString())
-        ).thenThrow(
-                new AuthenticationException("No one cares as we are testing if correct credentials are passed in", 42)
-        );
+        when(factory.getOpenstack(anyString(), anyBoolean(), any(OpenstackCredential.class), anyString()))
+                .thenThrow(new AuthenticationException(
+                        "No one cares as we are testing if correct credentials are passed in", 42));
 
         URL url = new URL(j.getURL().toExternalForm() + fillUrl + QUERY_STRING);
         JenkinsRule.WebClient wc = j.createWebClient();
         wc.getPage(wc.addCrumb(new WebRequest(url, HttpMethod.POST)));
 
-        verify(factory).getOpenstack(eq(END_POINT), eq(IGNORE_SSL), eq(OpenstackCredentials.getCredential(CREDENTIALSID)), eq(REGION));
+        verify(factory)
+                .getOpenstack(
+                        eq(END_POINT),
+                        eq(IGNORE_SSL),
+                        eq(OpenstackCredentials.getCredential(CREDENTIALSID)),
+                        eq(REGION));
         verifyNoMoreInteractions(factory);
     }
 
@@ -277,7 +290,8 @@ public class SlaveOptionsDescriptorTest {
         final HashMap<String, Object> map = new HashMap<>();
         // StaplerRequest required
         j.executeOnServer(new Callable<Void>() {
-            @Override public Void call() {
+            @Override
+            public Void call() {
                 SlaveOptionsDescriptor d = (SlaveOptionsDescriptor) j.jenkins.getDescriptorOrDie(SlaveOptions.class);
                 d.calcFillSettings(field, map);
                 return null;

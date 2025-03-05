@@ -1,5 +1,8 @@
 package jenkins.plugins.openstack.pipeline;
 
+import java.io.Serializable;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.plugins.openstack.compute.JCloudsCloud;
 import jenkins.plugins.openstack.compute.JCloudsSlaveTemplate;
 import jenkins.plugins.openstack.compute.ServerScope;
@@ -11,10 +14,6 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.openstack4j.model.compute.Server;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.io.Serializable;
-
 /**
  * Server wrapper for pipeline use.
  */
@@ -23,7 +22,7 @@ public class SimplifiedServer implements Serializable {
     private static final long serialVersionUID = 860084023141474202L;
 
     // Null after destroyed
-    private @CheckForNull Server srv;
+    private @CheckForNull volatile Server srv;
     private @Nonnull String cloud;
     private @Nonnull String template;
     private @Nonnull String scope;
@@ -59,17 +58,11 @@ public class SimplifiedServer implements Serializable {
 
     @Whitelisted
     public String getStatus() {
-        return srv != null
-                ? srv.getStatus().name()
-                : null
-        ;
+        return srv != null ? srv.getStatus().name() : null;
     }
 
     @Whitelisted
     public String getId() {
-        return srv != null
-                ? srv.getId()
-                : null
-        ;
+        return srv != null ? srv.getId() : null;
     }
 }
