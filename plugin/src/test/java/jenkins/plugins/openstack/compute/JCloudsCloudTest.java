@@ -1,22 +1,10 @@
 package jenkins.plugins.openstack.compute;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.Credentials;
@@ -29,8 +17,6 @@ import hudson.model.Label;
 import hudson.model.UnprotectedRootAction;
 import hudson.model.User;
 import hudson.security.ACL;
-import hudson.security.ACLContext;
-import hudson.security.AccessDeniedException3;
 import hudson.security.Permission;
 import hudson.security.SidACL;
 import hudson.slaves.Cloud;
@@ -71,7 +57,6 @@ import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.mockito.stubbing.Answer;
 import org.openstack4j.api.OSClient;
-import org.springframework.security.core.acls.sid.Sid;
 
 public class JCloudsCloudTest {
     private static final List<JCloudsSlaveTemplate> NO_TEMPLATES = Collections.emptyList();
@@ -579,7 +564,7 @@ public class JCloudsCloudTest {
         public @Nonnull ACL getACL() {
             return new SidACL() {
                 @Override
-                protected Boolean hasPermission(Sid p, Permission permission) {
+                public Boolean hasPermission(ACL.Sid p, Permission permission) {
                     return permission.equals(authorized);
                 }
             };
