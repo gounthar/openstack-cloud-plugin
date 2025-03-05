@@ -23,6 +23,16 @@
  */
 package jenkins.plugins.openstack;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import hudson.Functions;
 import hudson.model.Node;
@@ -31,6 +41,8 @@ import io.jenkins.plugins.casc.ConfigurationAsCode;
 import io.jenkins.plugins.casc.ConfiguratorException;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import java.net.URISyntaxException;
+import java.util.List;
 import jenkins.plugins.openstack.compute.JCloudsCloud;
 import jenkins.plugins.openstack.compute.JCloudsSlaveTemplate;
 import jenkins.plugins.openstack.compute.SlaveOptions;
@@ -42,19 +54,6 @@ import jenkins.plugins.openstack.compute.slaveopts.BootSource;
 import jenkins.plugins.openstack.compute.slaveopts.LauncherFactory;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.net.URISyntaxException;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 // The tests depends on JCasC ability to enforce javax.annotations.* - which is convenient but somewhat surprising for
 // plugin authors. This adds test coverage needed to verify things still works.
@@ -73,20 +72,22 @@ public class JcascTest {
         assertEquals("foo", c.getZone());
         { // Credentials
             assertEquals("openstack_service_credentials", c.getCredentialsId());
-            OpenstackCredentialv3 cv3 = (OpenstackCredentialv3) OpenstackCredentials.getCredential(c.getCredentialsId());
+            OpenstackCredentialv3 cv3 =
+                    (OpenstackCredentialv3) OpenstackCredentials.getCredential(c.getCredentialsId());
             assertEquals("foo", cv3.getUsername());
             assertEquals("bar", cv3.getPassword().getPlainText());
             assertEquals("acme.com", cv3.getUserDomain());
             assertEquals("casc", cv3.getProjectName());
             assertEquals("acme.com", cv3.getProjectDomain());
 
-            OpenstackCredentialv2 cv2 = (OpenstackCredentialv2) OpenstackCredentials.getCredential("openstack_service_credentialsV2");
+            OpenstackCredentialv2 cv2 =
+                    (OpenstackCredentialv2) OpenstackCredentials.getCredential("openstack_service_credentialsV2");
             assertEquals("username", cv2.getUsername());
             assertEquals("pwd", cv2.getPassword().getPlainText());
             assertEquals("tnt", cv2.getTenant());
         }
 
-        final List<NodeProperty<Node>> expectedCloudNPs = PluginTestRule.mkListOfNodeProperties(1,3);
+        final List<NodeProperty<Node>> expectedCloudNPs = PluginTestRule.mkListOfNodeProperties(1, 3);
         { // Slave options
             SlaveOptions co = c.getRawSlaveOptions();
             assertEquals("Image Name", ((BootSource.Image) co.getBootSource()).getName());
@@ -94,7 +95,9 @@ public class JcascTest {
             assertEquals("hid", co.getHardwareId());
             assertEquals("net", co.getNetworkId());
             assertEquals("user-data-id", co.getUserDataId());
-            assertThat(UserDataConfig.resolve(co.getUserDataId()).trim(), allOf(startsWith("#cloud-config"), endsWith("system: false")));
+            assertThat(
+                    UserDataConfig.resolve(co.getUserDataId()).trim(),
+                    allOf(startsWith("#cloud-config"), endsWith("system: false")));
 
             assertEquals((Integer) 11, co.getInstanceCap());
             assertEquals((Integer) 1, co.getInstancesMin());
@@ -124,25 +127,34 @@ public class JcascTest {
         SlaveOptions jso = c.getTemplate("jnlp").getRawSlaveOptions();
         assertThat(jso.getLauncherFactory(), instanceOf(LauncherFactory.JNLP.class));
 
-        BootSource.VolumeSnapshot vs = (BootSource.VolumeSnapshot) c.getTemplate("volumeSnapshot").getRawSlaveOptions().getBootSource();
+        BootSource.VolumeSnapshot vs = (BootSource.VolumeSnapshot)
+                c.getTemplate("volumeSnapshot").getRawSlaveOptions().getBootSource();
         assertEquals("Volume name", vs.getName());
 
-        BootSource.VolumeFromImage vfi = (BootSource.VolumeFromImage) c.getTemplate("volumeFromImage").getRawSlaveOptions().getBootSource();
+        BootSource.VolumeFromImage vfi = (BootSource.VolumeFromImage)
+                c.getTemplate("volumeFromImage").getRawSlaveOptions().getBootSource();
         assertEquals("Volume name", vfi.getName());
         assertEquals(15, vfi.getVolumeSize());
 
         final List<NodeProperty<Node>> expectedCustomNPs = PluginTestRule.mkListOfNodeProperties(2);
         JCloudsSlaveTemplate templateWithCustomNodeProperties = c.getTemplate("customNodeProperties");
-        assertEquals(expectedCustomNPs, templateWithCustomNodeProperties.getRawSlaveOptions().getNodeProperties());
+        assertEquals(
+                expectedCustomNPs,
+                templateWithCustomNodeProperties.getRawSlaveOptions().getNodeProperties());
 
         final List<NodeProperty<Node>> expectedNoNPs = PluginTestRule.mkListOfNodeProperties();
         JCloudsSlaveTemplate templateWithNoNodeProperties = c.getTemplate("noNodeProperties");
-        assertEquals(expectedNoNPs, templateWithNoNodeProperties.getRawSlaveOptions().getNodeProperties());
+        assertEquals(
+                expectedNoNPs, templateWithNoNodeProperties.getRawSlaveOptions().getNodeProperties());
 
         assertEquals(expectedCloudNPs, c.getEffectiveSlaveOptions().getNodeProperties());
         assertEquals(expectedCloudNPs, t.getEffectiveSlaveOptions().getNodeProperties());
-        assertEquals(expectedCustomNPs, templateWithCustomNodeProperties.getEffectiveSlaveOptions().getNodeProperties());
-        assertEquals(expectedNoNPs, templateWithNoNodeProperties.getEffectiveSlaveOptions().getNodeProperties());
+        assertEquals(
+                expectedCustomNPs,
+                templateWithCustomNodeProperties.getEffectiveSlaveOptions().getNodeProperties());
+        assertEquals(
+                expectedNoNPs,
+                templateWithNoNodeProperties.getEffectiveSlaveOptions().getNodeProperties());
     }
 
     @Test
@@ -162,8 +174,8 @@ public class JcascTest {
     // Not trivial as at the time plugin is configured the referenced entities might not yet be configured. So it needs
     // to accept what it cannot reference but should still fail somehow
     // @Test
-    //public void resolveUserData() throws Exception {
-    //}
+    // public void resolveUserData() throws Exception {
+    // }
 
     private void assertFailsWith(final String filename, String expected) {
         try {
@@ -176,7 +188,11 @@ public class JcascTest {
 
     private void applyConfig(String filename) throws ConfiguratorException {
         try {
-            ConfigurationAsCode.get().configure(getClass().getResource("JcascTest/" + filename + ".yaml").toURI().toString());
+            ConfigurationAsCode.get()
+                    .configure(getClass()
+                            .getResource("JcascTest/" + filename + ".yaml")
+                            .toURI()
+                            .toString());
         } catch (URISyntaxException e) {
             throw new AssertionError(e);
         }

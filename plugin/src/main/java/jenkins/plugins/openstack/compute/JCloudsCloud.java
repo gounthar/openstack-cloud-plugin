@@ -1,5 +1,7 @@
 package jenkins.plugins.openstack.compute;
 
+import static java.lang.Boolean.TRUE;
+
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -21,6 +23,28 @@ import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import jenkins.plugins.openstack.compute.auth.OpenstackCredential;
 import jenkins.plugins.openstack.compute.auth.OpenstackCredentials;
@@ -45,31 +69,6 @@ import org.openstack4j.api.exceptions.AuthenticationException;
 import org.openstack4j.model.compute.Server;
 import org.springframework.security.core.Authentication;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static java.lang.Boolean.TRUE;
-
 /**
  * The JClouds version of the Jenkins Cloud.
  *
@@ -85,7 +84,8 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
 
     private final @CheckForNull String zone; // OpenStack4j requires null when there is no zone configured
 
-    // Make sure only diff of defaults is saved so when plugin defaults will change users are not stuck with outdated config
+    // Make sure only diff of defaults is saved so when plugin defaults will change users are not stuck with outdated
+    // config
     private /*final*/ @Nonnull SlaveOptions slaveOptions;
 
     private final @Nonnull List<JCloudsSlaveTemplate> templates;
@@ -122,7 +122,8 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
         throw new IllegalArgumentException("'" + name + "' is not an OpenStack cloud but " + cloud);
     }
 
-    @DataBoundConstructor @Restricted(DoNotUse.class)
+    @DataBoundConstructor
+    @Restricted(DoNotUse.class)
     public JCloudsCloud(
             final @Nonnull String name,
             final @Nonnull String endPointUrl,
@@ -130,15 +131,15 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
             final @CheckForNull String zone,
             final @CheckForNull SlaveOptions slaveOptions,
             final @CheckForNull List<JCloudsSlaveTemplate> templates,
-            final @Nonnull String credentialsId
-    ) {
+            final @Nonnull String credentialsId) {
         super(Util.fixNull(name).trim());
 
         this.endPointUrl = Util.fixNull(endPointUrl).trim();
         this.ignoreSsl = TRUE.equals(ignoreSsl);
         this.zone = Util.fixEmptyAndTrim(zone);
         this.credentialId = credentialsId;
-        this.slaveOptions = slaveOptions == null ? SlaveOptions.empty() : slaveOptions.eraseDefaults(DescriptorImpl.DEFAULTS);
+        this.slaveOptions =
+                slaveOptions == null ? SlaveOptions.empty() : slaveOptions.eraseDefaults(DescriptorImpl.DEFAULTS);
 
         this.templates = templates == null ? Collections.emptyList() : Collections.unmodifiableList(templates);
 
@@ -147,14 +148,13 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
 
     @SuppressWarnings({"unused", "deprecation", "ConstantConditions"})
     private Object readResolve() {
-        if (retentionTime != null || startTimeout != null || floatingIps != null || instanceCap != null ) {
+        if (retentionTime != null || startTimeout != null || floatingIps != null || instanceCap != null) {
             SlaveOptions carry = SlaveOptions.builder()
                     .instanceCap(instanceCap)
                     .retentionTime(retentionTime)
                     .startTimeout(startTimeout)
                     .floatingIpPool(floatingIps ? "public" : null)
-                    .build()
-            ;
+                    .build();
             slaveOptions = DescriptorImpl.DEFAULTS.override(carry);
             retentionTime = null;
             startTimeout = null;
@@ -180,17 +180,19 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
             String[] id = identity.split(":");
             OpenstackCredential migratedOpenstackCredential = null;
             if (id.length == 2) {
-                //If id.length == 2, it is assumed that is being used API V2
+                // If id.length == 2, it is assumed that is being used API V2
                 String tenant = id[0];
                 String username = id[1];
-                migratedOpenstackCredential = new OpenstackCredentialv2(CredentialsScope.SYSTEM,null,null,tenant,username,credential);
+                migratedOpenstackCredential =
+                        new OpenstackCredentialv2(CredentialsScope.SYSTEM, null, null, tenant, username, credential);
             } else if (id.length == 3) {
                 // convert the former identity string PROJECT_NAME:USER_NAME:DOMAIN_NAME
                 // to the new OpenstackV3 credential
                 String project = id[0];
                 String username = id[1];
                 String domain = id[2];
-                migratedOpenstackCredential = new OpenstackCredentialv3(CredentialsScope.SYSTEM,null,null,username,domain,project,domain,credential);
+                migratedOpenstackCredential = new OpenstackCredentialv3(
+                        CredentialsScope.SYSTEM, null, null, username, domain, project, domain, credential);
             }
             if (migratedOpenstackCredential != null) {
                 credentialId = migratedOpenstackCredential.getId();
@@ -211,7 +213,7 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
     }
 
     private void injectReferenceIntoTemplates() {
-        for(JCloudsSlaveTemplate t: templates) {
+        for (JCloudsSlaveTemplate t : templates) {
             t.setOwner(this);
         }
     }
@@ -242,20 +244,20 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
      * The queue contains the same template in as many instances as is the number of machines that can be safely
      * provisioned without violating instanceCap constrain.
      */
-    private @Nonnull Queue<JCloudsSlaveTemplate> getAvailableTemplateProvider(@CheckForNull Label label, int excessWorkload) {
+    private @Nonnull Queue<JCloudsSlaveTemplate> getAvailableTemplateProvider(
+            @CheckForNull Label label, int excessWorkload) {
         final int globalMax = getEffectiveSlaveOptions().getInstanceCap();
 
         final Queue<JCloudsSlaveTemplate> queue = new ConcurrentLinkedDeque<>();
 
-        List<JCloudsComputer> cloudComputers = JCloudsComputer.getAll().stream().filter(
-                it -> name.equals(it.getId().getCloudName())
-        ).collect(Collectors.toList());
+        List<JCloudsComputer> cloudComputers = JCloudsComputer.getAll().stream()
+                .filter(it -> name.equals(it.getId().getCloudName()))
+                .collect(Collectors.toList());
 
         int nodeCount = cloudComputers.size();
         if (nodeCount >= globalMax) {
             return queue; // more slaves then declared - no need to query openstack
         }
-
 
         final List<Server> runningNodes = getOpenstack().getRunningNodes();
 
@@ -272,9 +274,10 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
                 SlaveOptions opts = t.getEffectiveSlaveOptions();
                 final int templateMax = opts.getInstanceCap();
                 long templateNodeCount = Math.max(
-                        cloudComputers.stream().filter(it -> t.getName().equals(it.getId().getTemplateName())).count(),
-                        runningNodes.stream().filter(t::hasProvisioned).count()
-                );
+                        cloudComputers.stream()
+                                .filter(it -> t.getName().equals(it.getId().getTemplateName()))
+                                .count(),
+                        runningNodes.stream().filter(t::hasProvisioned).count());
                 if (templateNodeCount >= templateMax) continue; // Exceeded
 
                 long templateCapacity = templateMax - templateNodeCount;
@@ -299,7 +302,9 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
         Queue<JCloudsSlaveTemplate> templateProvider = getAvailableTemplateProvider(label, excessWorkload);
 
         List<PlannedNode> plannedNodeList = new ArrayList<>();
-        while (excessWorkload > 0 && !Jenkins.get().isQuietingDown() && !Jenkins.get().isTerminating()) {
+        while (excessWorkload > 0
+                && !Jenkins.get().isQuietingDown()
+                && !Jenkins.get().isTerminating()) {
 
             final JCloudsSlaveTemplate template = templateProvider.poll();
             if (template == null) {
@@ -341,22 +346,19 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
     }
 
     @Restricted(NoExternalUse.class)
-    public /*for mocking*/ @CheckForNull String slaveIsWaitingFor(@Nonnull JCloudsSlave slave) throws ProvisioningFailedException {
+    public /*for mocking*/ @CheckForNull String slaveIsWaitingFor(@Nonnull JCloudsSlave slave)
+            throws ProvisioningFailedException {
         return slave.getSlaveOptions().getLauncherFactory().isWaitingFor(slave);
     }
 
     @Override
     public boolean canProvision(final CloudState cs) {
-        for (JCloudsSlaveTemplate t : templates)
-            if (t.canProvision(cs.getLabel()))
-                return true;
+        for (JCloudsSlaveTemplate t : templates) if (t.canProvision(cs.getLabel())) return true;
         return false;
     }
 
     public @CheckForNull JCloudsSlaveTemplate getTemplate(String name) {
-        for (JCloudsSlaveTemplate t : templates)
-            if (t.getName().equals(name))
-                return t;
+        for (JCloudsSlaveTemplate t : templates) if (t.getName().equals(name)) return t;
         return null;
     }
 
@@ -411,7 +413,8 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
 
         int templateCap = t.getEffectiveSlaveOptions().getInstanceCap();
         if (template >= templateCap) {
-            String msg = String.format("Instance cap for this template (%s/%s) is now reached: %d", this.name, name, templateCap);
+            String msg = String.format(
+                    "Instance cap for this template (%s/%s) is now reached: %d", this.name, name, templateCap);
             sendPlaintextError(msg, rsp);
             return;
         }
@@ -461,7 +464,9 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
      * Provision slave out of {@link NodeProvisioner} context.
      */
     @Restricted(NoExternalUse.class)
-    /*package*/ @Nonnull JCloudsSlave provisionSlaveExplicitly(@Nonnull JCloudsSlaveTemplate template) throws IOException, Openstack.ActionFailed{
+    /*package*/ @Nonnull
+    JCloudsSlave provisionSlaveExplicitly(@Nonnull JCloudsSlaveTemplate template)
+            throws IOException, Openstack.ActionFailed {
         CloudStatistics.ProvisioningListener provisioningListener = CloudStatistics.ProvisioningListener.get();
         ProvisioningActivity.Id id = new ProvisioningActivity.Id(name, template.getName());
 
@@ -526,8 +531,7 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
                 .fsRoot("/jenkins")
                 .securityGroups("default")
                 .configDrive(false)
-                .build()
-        ;
+                .build();
 
         @Override
         public @Nonnull String getDisplayName() {
@@ -555,8 +559,7 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
                 @QueryParameter boolean ignoreSsl,
                 @QueryParameter String credentialsId,
                 @QueryParameter String endPointUrl,
-                @QueryParameter String zone
-        ) {
+                @QueryParameter String zone) {
             Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             try {
                 OpenstackCredential openstackCredential = OpenstackCredentials.getCredential(credentialsId);
@@ -565,13 +568,18 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
                 Throwable ex = openstack.sanityCheck();
 
                 if (ex != null) {
-                    return FormValidation.warning(ex, "Connection not validated, plugin might not operate correctly: " + ex.getMessage());
+                    return FormValidation.warning(
+                            ex, "Connection not validated, plugin might not operate correctly: " + ex.getMessage());
                 }
-                return FormValidation.okWithMarkup("Connection succeeded!<br/><small>" + Util.escape(openstack.getInfo()) + "</small>");
+                return FormValidation.okWithMarkup(
+                        "Connection succeeded!<br/><small>" + Util.escape(openstack.getInfo()) + "</small>");
             } catch (FormValidation ex) {
                 return ex;
             } catch (Exception ex) {
-                return FormValidation.error(ex, "Cannot connect to specified cloud, please check the identity and credentials: " + ex.getMessage());
+                return FormValidation.error(
+                        ex,
+                        "Cannot connect to specified cloud, please check the identity and credentials: "
+                                + ex.getMessage());
             }
         }
 
@@ -596,7 +604,10 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
             jenkins.checkPermission(Jenkins.ADMINISTER);
 
             return new StandardListBoxModel()
-                    .includeMatchingAs(ACL.SYSTEM2, jenkins, StandardCredentials.class,
+                    .includeMatchingAs(
+                            ACL.SYSTEM2,
+                            jenkins,
+                            StandardCredentials.class,
                             Collections.<DomainRequirement>emptyList(),
                             CredentialsMatchers.instanceOf(OpenstackCredential.class))
                     .includeEmptyValue();

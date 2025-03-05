@@ -23,6 +23,8 @@
  */
 package jenkins.plugins.openstack.compute.slaveopts;
 
+import static jenkins.plugins.openstack.compute.SlaveOptionsDescriptor.REQUIRED;
+
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.Util;
@@ -30,6 +32,15 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import jenkins.plugins.openstack.compute.JCloudsCloud;
 import jenkins.plugins.openstack.compute.OsAuthDescriptor;
 import jenkins.plugins.openstack.compute.auth.OpenstackCredential;
@@ -52,18 +63,6 @@ import org.openstack4j.model.compute.BDMSourceType;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.builder.BlockDeviceMappingBuilder;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
-
-import javax.annotation.Nonnull;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static jenkins.plugins.openstack.compute.SlaveOptionsDescriptor.REQUIRED;
 
 /**
  * The source media (Image, VolumeSnapshot etc) that the Instance is booted from.
@@ -102,8 +101,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
      *             Unable to amend the server so it has to be rolled-back.
      */
     public void afterProvisioning(@Nonnull Server server, @Nonnull Openstack openstack)
-            throws JCloudsCloud.ProvisioningFailedException {
-    }
+            throws JCloudsCloud.ProvisioningFailedException {}
 
     @Override
     public BootSourceDescriptor getDescriptor() {
@@ -132,14 +130,16 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             return Arrays.asList("../..", "../../..");
         }
 
-        protected ListBoxModel makeListBoxModelOfAllNames(String existingValue, String endPointUrl, boolean ignoreSsl, String credentialsId, String zone) {
+        protected ListBoxModel makeListBoxModelOfAllNames(
+                String existingValue, String endPointUrl, boolean ignoreSsl, String credentialsId, String zone) {
             ListBoxModel m = new ListBoxModel();
             final String valueOrEmpty = Util.fixNull(existingValue);
             OpenstackCredential openstackCredential = OpenstackCredentials.getCredential(credentialsId);
             m.add(new ListBoxModel.Option("None specified", "", valueOrEmpty.isEmpty()));
             try {
                 if (haveAuthDetails(endPointUrl, openstackCredential, zone)) {
-                    final Openstack openstack = Openstack.Factory.get(endPointUrl, ignoreSsl, openstackCredential, zone);
+                    final Openstack openstack =
+                            Openstack.Factory.get(endPointUrl, ignoreSsl, openstackCredential, zone);
                     final List<String> values = listAllNames(openstack);
                     for (String value : values) {
                         final String displayText = value;
@@ -157,16 +157,23 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             return m;
         }
 
-        protected FormValidation checkNameMatchesOnlyOnce(String value, String endPointUrl1, String endPointUrl2, boolean ignoreSsl1, boolean ignoreSsl2, String credentialsId1, String credentialsId2, String zone1, String zone2) {
-            if (Util.fixEmpty(value) == null)
-                return REQUIRED;
+        protected FormValidation checkNameMatchesOnlyOnce(
+                String value,
+                String endPointUrl1,
+                String endPointUrl2,
+                boolean ignoreSsl1,
+                boolean ignoreSsl2,
+                String credentialsId1,
+                String credentialsId2,
+                String zone1,
+                String zone2) {
+            if (Util.fixEmpty(value) == null) return REQUIRED;
             final String endPointUrl = getDefault(endPointUrl1, endPointUrl2);
-            final String credentialsId = getDefault(credentialsId1,credentialsId2);
+            final String credentialsId = getDefault(credentialsId1, credentialsId2);
             final boolean ignoreSsl = ignoreSsl1 || ignoreSsl2;
             OpenstackCredential openstackCredential = OpenstackCredentials.getCredential(credentialsId);
             final String zone = getDefault(zone1, zone2);
-            if (!haveAuthDetails(endPointUrl, openstackCredential, zone))
-                return FormValidation.ok();
+            if (!haveAuthDetails(endPointUrl, openstackCredential, zone)) return FormValidation.ok();
 
             final List<String> matches;
             try {
@@ -181,10 +188,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             }
 
             final int numberOfMatches = matches.size();
-            if (numberOfMatches < 1)
-                return FormValidation.error("Not found");
-            if (numberOfMatches > 1)
-                return FormValidation.warning("Multiple matching results");
+            if (numberOfMatches < 1) return FormValidation.error("Not found");
+            if (numberOfMatches > 1) return FormValidation.warning("Multiple matching results");
             return FormValidation.ok();
         }
 
@@ -203,7 +208,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
         /**
          * Lists all the names (of this kind of {@link BootSource}) that the
          * user could choose between.
-         * 
+         *
          * @param openstack
          *            Means of communicating with the OpenStack service.
          * @return A list of all the names the user could choose from.
@@ -229,9 +234,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
         }
 
         @Override
-        public void setServerBootSource(
-                @Nonnull ServerCreateBuilder builder, @Nonnull Openstack os
-        ) throws JCloudsCloud.ProvisioningFailedException {
+        public void setServerBootSource(@Nonnull ServerCreateBuilder builder, @Nonnull Openstack os)
+                throws JCloudsCloud.ProvisioningFailedException {
             super.setServerBootSource(builder, os);
             final List<String> matchingIds = getDescriptor().findMatchingIds(os, name);
             final String id = selectIdFromListAndLogProblems(matchingIds, name, "Images");
@@ -247,10 +251,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             final Image image = (Image) o;
             return this.name.equals(image.name);
         }
@@ -283,27 +285,38 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             @Restricted(DoNotUse.class)
             @InjectOsAuth
             @RequirePOST
-            public ListBoxModel doFillNameItems(@QueryParameter String name,
-                                                @QueryParameter String endPointUrl,
-                                                @QueryParameter boolean ignoreSsl,
-                                                @QueryParameter String credentialsId,
-                                                @QueryParameter String zone) {
+            public ListBoxModel doFillNameItems(
+                    @QueryParameter String name,
+                    @QueryParameter String endPointUrl,
+                    @QueryParameter boolean ignoreSsl,
+                    @QueryParameter String credentialsId,
+                    @QueryParameter String zone) {
                 return makeListBoxModelOfAllNames(name, endPointUrl, ignoreSsl, credentialsId, zone);
             }
 
             @Restricted(DoNotUse.class)
             @RequirePOST
-            public FormValidation doCheckName(@QueryParameter String value,
+            public FormValidation doCheckName(
+                    @QueryParameter String value,
                     // authentication fields can be in two places relative to us.
-                                              @RelativePath("../..") @QueryParameter("endPointUrl") String endPointUrlCloud,
-                                              @RelativePath("../../..") @QueryParameter("endPointUrl") String endPointUrlTemplate,
-                                              @RelativePath("../..") @QueryParameter("ignoreSsl") boolean ignoreSslCloud,
-                                              @RelativePath("../../..") @QueryParameter("ignoreSsl") boolean ignoreSslTemplate,
-                                              @RelativePath("../..") @QueryParameter("credentialsId") String credentialsIdCloud,
-                                              @RelativePath("../../..") @QueryParameter("credentialsId") String credentialsIdTemplate,
-                                              @RelativePath("../..") @QueryParameter("zone") String zoneCloud,
-                                              @RelativePath("../../..") @QueryParameter("zone") String zoneTemplate) {
-                return checkNameMatchesOnlyOnce(value, endPointUrlCloud, endPointUrlTemplate, ignoreSslCloud, ignoreSslTemplate, credentialsIdCloud, credentialsIdTemplate, zoneCloud, zoneTemplate);
+                    @RelativePath("../..") @QueryParameter("endPointUrl") String endPointUrlCloud,
+                    @RelativePath("../../..") @QueryParameter("endPointUrl") String endPointUrlTemplate,
+                    @RelativePath("../..") @QueryParameter("ignoreSsl") boolean ignoreSslCloud,
+                    @RelativePath("../../..") @QueryParameter("ignoreSsl") boolean ignoreSslTemplate,
+                    @RelativePath("../..") @QueryParameter("credentialsId") String credentialsIdCloud,
+                    @RelativePath("../../..") @QueryParameter("credentialsId") String credentialsIdTemplate,
+                    @RelativePath("../..") @QueryParameter("zone") String zoneCloud,
+                    @RelativePath("../../..") @QueryParameter("zone") String zoneTemplate) {
+                return checkNameMatchesOnlyOnce(
+                        value,
+                        endPointUrlCloud,
+                        endPointUrlTemplate,
+                        ignoreSslCloud,
+                        ignoreSslTemplate,
+                        credentialsIdCloud,
+                        credentialsIdTemplate,
+                        zoneCloud,
+                        zoneTemplate);
             }
         }
     }
@@ -326,7 +339,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
         }
 
         @Override
-        public void setServerBootSource(@Nonnull ServerCreateBuilder builder, @Nonnull Openstack os) throws JCloudsCloud.ProvisioningFailedException {
+        public void setServerBootSource(@Nonnull ServerCreateBuilder builder, @Nonnull Openstack os)
+                throws JCloudsCloud.ProvisioningFailedException {
             super.setServerBootSource(builder, os);
             final List<String> matchingIds = getDescriptor().findMatchingIds(os, name);
             final String id = selectIdFromListAndLogProblems(matchingIds, name, "Images");
@@ -337,8 +351,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
                     .uuid(id)
                     .volumeSize(volumeSize)
                     .deleteOnTermination(true)
-                    .bootIndex(0)
-            ;
+                    .bootIndex(0);
             builder.blockDevice(volumeBuilder.build());
             builder.addMetadataItem(OPENSTACK_BOOTSOURCE_VOLUME_FROM_IMAGE_ID_KEY, id);
         }
@@ -350,10 +363,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!super.equals(o))
-                return false;
+            if (this == o) return true;
+            if (!super.equals(o)) return false;
             final VolumeFromImage that = (VolumeFromImage) o;
             return this.volumeSize == that.volumeSize;
         }
@@ -377,7 +388,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
     public static final class VolumeSnapshot extends BootSource {
         private static final long serialVersionUID = 1629434277902240395L;
         private static final String OPENSTACK_BOOTSOURCE_VOLUMESNAPSHOT_ID_KEY = "jenkins-boot-volumesnapshot-id";
-        private static final String OPENSTACK_BOOTSOURCE_VOLUMESNAPSHOT_DESC_KEY = "jenkins-boot-volumesnapshot-description";
+        private static final String OPENSTACK_BOOTSOURCE_VOLUMESNAPSHOT_DESC_KEY =
+                "jenkins-boot-volumesnapshot-description";
 
         private final @Nonnull String name;
 
@@ -434,9 +446,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             final String instanceId = server.getId();
             final String instanceName = server.getName();
             final Map<String, String> instanceMetaData = server.getMetadata();
-            final String instanceVolumeSnapshotId = instanceMetaData == null
-                    ? null
-                    : instanceMetaData.get(OPENSTACK_BOOTSOURCE_VOLUMESNAPSHOT_ID_KEY);
+            final String instanceVolumeSnapshotId =
+                    instanceMetaData == null ? null : instanceMetaData.get(OPENSTACK_BOOTSOURCE_VOLUMESNAPSHOT_ID_KEY);
             int i = 0;
             final String newVolumeDescription = "For " + instanceName + " (" + instanceId + "), from VolumeSnapshot "
                     + name + (instanceVolumeSnapshotId == null ? "" : " (" + instanceVolumeSnapshotId + ")") + ".";
@@ -463,10 +474,8 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             final VolumeSnapshot that = (VolumeSnapshot) o;
             return name.equals(that.name);
         }
@@ -499,13 +508,19 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             @Restricted(DoNotUse.class)
             @OsAuthDescriptor.InjectOsAuth
             @RequirePOST
-            public ListBoxModel doFillNameItems(@QueryParameter String name, @QueryParameter String endPointUrl, @QueryParameter boolean ignoreSsl, @QueryParameter String credentialsId, @QueryParameter String zone) {
+            public ListBoxModel doFillNameItems(
+                    @QueryParameter String name,
+                    @QueryParameter String endPointUrl,
+                    @QueryParameter boolean ignoreSsl,
+                    @QueryParameter String credentialsId,
+                    @QueryParameter String zone) {
                 return makeListBoxModelOfAllNames(name, endPointUrl, ignoreSsl, credentialsId, zone);
             }
 
             @Restricted(DoNotUse.class)
             @RequirePOST
-            public FormValidation doCheckName(@QueryParameter String value,
+            public FormValidation doCheckName(
+                    @QueryParameter String value,
                     // authentication fields can be in two places relative to
                     // us.
                     @RelativePath("../..") @QueryParameter("endPointUrl") String endPointUrlCloud,
@@ -516,7 +531,16 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
                     @RelativePath("../../..") @QueryParameter("credentialsId") String credentialsIdTemplate,
                     @RelativePath("../..") @QueryParameter("zone") String zoneCloud,
                     @RelativePath("../../..") @QueryParameter("zone") String zoneTemplate) {
-                return checkNameMatchesOnlyOnce(value, endPointUrlCloud, endPointUrlTemplate, ignoreSslCloud, ignoreSslTemplate, credentialsIdCloud, credentialsIdTemplate, zoneCloud, zoneTemplate);
+                return checkNameMatchesOnlyOnce(
+                        value,
+                        endPointUrlCloud,
+                        endPointUrlTemplate,
+                        ignoreSslCloud,
+                        ignoreSslTemplate,
+                        credentialsIdCloud,
+                        credentialsIdTemplate,
+                        zoneCloud,
+                        zoneTemplate);
             }
         }
     }
@@ -529,8 +553,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
     // ever.
     @SuppressWarnings({"unused", "serial"})
     public static final class Unspecified extends BootSource {
-        private Unspecified() {
-        } // Never instantiate
+        private Unspecified() {} // Never instantiate
 
         @Extension(ordinal = Double.MAX_VALUE) // Make it first and therefore default
         public static final class Desc extends Descriptor<BootSource> {
@@ -542,7 +565,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             @Override
             public BootSource newInstance(StaplerRequest2 req, @Nonnull JSONObject formData) throws FormException {
                 return null; // Make sure this is never instantiated and hence
-                             // will be treated as absent
+                // will be treated as absent
             }
         }
     }
