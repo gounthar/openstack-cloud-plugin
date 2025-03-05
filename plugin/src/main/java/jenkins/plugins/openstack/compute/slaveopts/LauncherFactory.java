@@ -51,7 +51,7 @@ import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
@@ -294,7 +294,7 @@ public abstract class LauncherFactory extends AbstractDescribableImpl<LauncherFa
         @Symbol("jnlp")
         public static final class Desc extends Descriptor<LauncherFactory> {
             @Override
-            public LauncherFactory newInstance(StaplerRequest req, @Nonnull JSONObject formData) {
+            public LauncherFactory newInstance(StaplerRequest2 req, @Nonnull JSONObject formData) {
                 return JNLP; // Let's avoid creating instances where we can
             }
         }
@@ -322,7 +322,7 @@ public abstract class LauncherFactory extends AbstractDescribableImpl<LauncherFa
                 return "Inherit / Override later";
             }
 
-            @Override public LauncherFactory newInstance(StaplerRequest req, @Nonnull JSONObject formData) {
+            @Override public LauncherFactory newInstance(StaplerRequest2 req, @Nonnull JSONObject formData) {
                 return null; // Make sure this is never instantiated and hence will be treated as absent
             }
         }

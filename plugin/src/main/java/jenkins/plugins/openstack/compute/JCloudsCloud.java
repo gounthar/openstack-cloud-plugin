@@ -38,8 +38,8 @@ import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.openstack4j.api.exceptions.AuthenticationException;
 import org.openstack4j.model.compute.Server;
@@ -47,7 +47,7 @@ import org.springframework.security.core.Authentication;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
@@ -363,13 +363,13 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
     /**
      * Provisions a new node manually (by clicking a button in the computer list).
      *
-     * @param req  {@link StaplerRequest}
-     * @param rsp  {@link StaplerResponse}
+     * @param req  {@link StaplerRequest2}
+     * @param rsp  {@link StaplerResponse2}
      * @param name Name of the template to provision
      */
     @Restricted(NoExternalUse.class)
     @RequirePOST
-    public void doProvision(StaplerRequest req, StaplerResponse rsp, @QueryParameter String name) throws IOException {
+    public void doProvision(StaplerRequest2 req, StaplerResponse2 rsp, @QueryParameter String name) throws IOException {
 
         // Temporary workaround for https://issues.jenkins-ci.org/browse/JENKINS-37616
         // Using Item.CONFIGURE as users authorized to do so can provision via job execution.
@@ -451,7 +451,7 @@ public class JCloudsCloud extends Cloud implements SlaveOptions.Holder {
     }
 
     // This is served by AJAX so we are stripping the html
-    private static void sendPlaintextError(String message, StaplerResponse rsp) throws IOException {
+    private static void sendPlaintextError(String message, StaplerResponse2 rsp) throws IOException {
         rsp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         PrintWriter response = rsp.getWriter();
         response.println("<error>" + message + "</error>");

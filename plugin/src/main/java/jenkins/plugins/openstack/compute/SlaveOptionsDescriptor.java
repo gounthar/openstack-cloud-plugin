@@ -44,7 +44,7 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.openstack4j.api.exceptions.AuthenticationException;
 import org.openstack4j.api.exceptions.ConnectionException;
@@ -542,7 +542,7 @@ public final class SlaveOptionsDescriptor extends OsAuthDescriptor<SlaveOptions>
 
     @Override
     @Restricted(NoExternalUse.class) // Stapler
-    public SlaveOptions newInstance(@Nullable StaplerRequest req, @Nonnull JSONObject formData) throws FormException {
+    public SlaveOptions newInstance(@Nullable StaplerRequest2 req, @Nonnull JSONObject formData) throws FormException {
         // Permit null and empty nodeProperties:
         // f:optionalBlock does not adhere to its documented contract when inline=true. The expected behavior here is
         // nodeProperties=null when the block is collapsed (no matter what is in). However, it is being sent even when

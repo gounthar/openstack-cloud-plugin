@@ -33,7 +33,7 @@ import jenkins.plugins.openstack.compute.auth.OpenstackCredentialv3;
 import jenkins.plugins.openstack.compute.internal.Openstack;
 import jenkins.plugins.openstack.compute.slaveopts.BootSource;
 import jenkins.plugins.openstack.compute.slaveopts.LauncherFactory;
-import org.acegisecurity.acls.sid.Sid;
+import org.springframework.security.core.acls.sid.Sid;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -44,7 +44,7 @@ import org.jvnet.hudson.test.MockAuthorizationStrategy;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.recipes.LocalData;
 import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.mockito.stubbing.Answer;
 import org.openstack4j.api.OSClient;
 
@@ -466,7 +466,7 @@ public class JCloudsCloudTest {
         }
 
         @Override public Object call() throws Exception {
-            cloud.doProvision(Stapler.getCurrentRequest(), Stapler.getCurrentResponse(), template.getName());
+            cloud.doProvision(Stapler.getCurrentRequest2(), Stapler.getCurrentResponse2(), template.getName());
             return null;
         }
     }
@@ -525,7 +525,7 @@ public class JCloudsCloudTest {
     @TestExtension("security808")
     public static final class CredentialsCollectingPortal implements UnprotectedRootAction {
 
-        private List<StaplerRequest> reqs = new ArrayList<>();
+        private List<StaplerRequest2> reqs = new ArrayList<>();
 
         @Override public String getIconFileName() {
             return null;
@@ -540,7 +540,7 @@ public class JCloudsCloudTest {
         }
 
         public void doDynamic() {
-            reqs.add(Stapler.getCurrentRequest());
+            reqs.add(Stapler.getCurrentRequest2());
         }
     }
 }

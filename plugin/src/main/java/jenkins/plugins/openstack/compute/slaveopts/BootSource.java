@@ -42,7 +42,7 @@ import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.exceptions.AuthenticationException;
@@ -540,7 +540,7 @@ public abstract class BootSource extends AbstractDescribableImpl<BootSource> imp
             }
 
             @Override
-            public BootSource newInstance(StaplerRequest req, @Nonnull JSONObject formData) throws FormException {
+            public BootSource newInstance(StaplerRequest2 req, @Nonnull JSONObject formData) throws FormException {
                 return null; // Make sure this is never instantiated and hence
                              // will be treated as absent
             }
