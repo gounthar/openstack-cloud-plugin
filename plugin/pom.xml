@@ -259,10 +259,10 @@
     <!--            </exclusions>-->
     <!--        </dependency>-->
     <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-acl</artifactId>
-        <version>5.8.0</version>
-        <scope>test</scope>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-acl</artifactId>
+      <version>5.8.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
